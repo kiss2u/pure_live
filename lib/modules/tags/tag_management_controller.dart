@@ -2,11 +2,14 @@ import 'package:pure_live/common/index.dart';
 import 'package:pure_live/modules/tags/live_tag.dart';
 import 'package:pure_live/common/utils/hive_pref_util.dart';
 
+enum TagNameValidation { valid, empty, duplicate }
+
 class TagManagementController extends GetxController {
   static const String _storageKey = 'user_custom_tags_v5';
   static const String _roomTagsMappingKey = 'room_to_tags_mapping_v1';
   final RxMap<String, List<String>> roomTagsMap = <String, List<String>>{}.obs;
   final RxList<LiveTag> tags = <LiveTag>[].obs;
+  int _lastGeneratedTagId = 0;
   static const Map<String, String> allTag = {'all': '全部'};
   static String get allTagKey => allTag.keys.first;
   static String get allTagLabel => allTag.values.first;
@@ -21,8 +24,9 @@ class TagManagementController extends GetxController {
     final List<dynamic>? storedTags = HivePrefUtil.getAnyPref(_storageKey);
     if (storedTags != null) {
       final list = storedTags.map((e) => LiveTag.fromJson(Map<String, dynamic>.from(e))).toList();
-      list.sort((a, b) => a.order.compareTo(b.order));
-      tags.assignAll(list);
+      final normalized = _normalizeTags(list);
+      tags.assignAll(normalized.values);
+      if (normalized.repaired) saveTags();
     } else {
       tags.clear();
     }
@@ -33,13 +37,12 @@ class TagManagementController extends GetxController {
   }
 
   Future<void> saveRoomTagsMapping() async {
-    await HivePrefUtil.setAnyPref(_roomTagsMappingKey, roomTagsMap);
+    await HivePrefUtil.setAnyPref(_roomTagsMappingKey, _copyRoomTagsMap(roomTagsMap));
   }
 
   Future<void> setRoomTags(LiveRoom room, List<String> newTagIds) async {
     final roomKey = room.identityKey;
-    final validTagIds = tags.map((tag) => tag.id).toSet();
-    final normalizedTagIds = newTagIds.where(validTagIds.contains).toSet().toList(growable: false);
+    final normalizedTagIds = _normalizeTagIds(newTagIds);
     final legacyKey = room.normalizedRoomId;
     if (legacyKey.isNotEmpty && legacyKey != roomKey) {
       roomTagsMap.remove(legacyKey);
@@ -58,22 +61,28 @@ class TagManagementController extends GetxController {
   /// A legacy tag is copied to every matching platform room before the old key
   /// is removed, preserving data while allowing future edits to diverge.
   void migrateLegacyRoomTagKeys(Iterable<LiveRoom> rooms) {
-    var changed = false;
+    final original = _copyRoomTagsMap(roomTagsMap);
+    final migrated = _normalizeRoomTagsMap(original);
     final migratedLegacyKeys = <String>{};
     for (final room in rooms) {
       final legacyKey = room.normalizedRoomId;
       if (legacyKey.isEmpty || room.normalizedPlatformId.isEmpty) continue;
-      final legacyTags = roomTagsMap[legacyKey];
+      final legacyTags = migrated[legacyKey];
       if (legacyTags == null) continue;
-      roomTagsMap.putIfAbsent(room.identityKey, () => List<String>.from(legacyTags));
+      final existingTags = migrated[room.identityKey] ?? const <String>[];
+      final mergedTags = _normalizeTagIds([...existingTags, ...legacyTags]);
+      if (mergedTags.isEmpty) {
+        migrated.remove(room.identityKey);
+      } else {
+        migrated[room.identityKey] = mergedTags;
+      }
       migratedLegacyKeys.add(legacyKey);
-      changed = true;
     }
     for (final key in migratedLegacyKeys) {
-      roomTagsMap.remove(key);
+      migrated.remove(key);
     }
-    if (!changed) return;
-    roomTagsMap.refresh();
+    if (_roomTagsMapsEqual(original, migrated)) return;
+    roomTagsMap.assignAll(migrated);
     saveRoomTagsMapping();
   }
 
@@ -84,7 +93,9 @@ class TagManagementController extends GetxController {
       final convertedMap = storedMap.map((key, value) {
         return MapEntry(key.toString(), List<String>.from(value as List));
       });
-      roomTagsMap.assignAll(convertedMap);
+      final normalized = _normalizeRoomTagsMap(convertedMap);
+      roomTagsMap.assignAll(normalized);
+      if (!_roomTagsMapsEqual(convertedMap, normalized)) saveRoomTagsMapping();
     }
   }
 
@@ -94,13 +105,10 @@ class TagManagementController extends GetxController {
 
   bool addTag(String name, String description) {
     final cleanName = name.trim();
-    if (cleanName.isEmpty) return false;
-
-    final exists = tags.any((tag) => tag.name.toLowerCase() == cleanName.toLowerCase());
-    if (exists) return false;
+    if (validateTagName(cleanName) != TagNameValidation.valid) return false;
 
     final newTag = LiveTag(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: _allocateTagId(tags.map((tag) => tag.id).toSet()),
       name: cleanName,
       description: description.trim(),
       order: tags.length,
@@ -123,18 +131,24 @@ class TagManagementController extends GetxController {
   bool updateTag(int index, String newName, String newDescription) {
     if (index < 0 || index >= tags.length) return false;
     final cleanName = newName.trim();
-    if (cleanName.isEmpty) return false;
-
-    if (tags[index].name != cleanName) {
-      final exists = tags.any((tag) => tag.name.toLowerCase() == cleanName.toLowerCase());
-      if (exists) return false;
-    }
+    if (validateTagName(cleanName, excludingIndex: index) != TagNameValidation.valid) return false;
 
     tags[index].name = cleanName;
     tags[index].description = newDescription.trim();
     tags.refresh();
     saveTags();
     return true;
+  }
+
+  TagNameValidation validateTagName(String name, {int? excludingIndex}) {
+    final cleanName = name.trim();
+    if (cleanName.isEmpty) return TagNameValidation.empty;
+
+    final normalizedName = cleanName.toLowerCase();
+    final exists = tags.asMap().entries.any(
+      (entry) => entry.key != excludingIndex && entry.value.name.toLowerCase() == normalizedName,
+    );
+    return exists ? TagNameValidation.duplicate : TagNameValidation.valid;
   }
 
   void pinToTop(int index) {
@@ -181,8 +195,86 @@ class TagManagementController extends GetxController {
     saveTags();
   }
 
+  String _allocateTagId(Set<String> usedIds) {
+    var candidate = DateTime.now().microsecondsSinceEpoch;
+    if (candidate <= _lastGeneratedTagId) candidate = _lastGeneratedTagId + 1;
+    while (usedIds.contains(candidate.toString())) {
+      candidate++;
+    }
+    _lastGeneratedTagId = candidate;
+    return candidate.toString();
+  }
+
+  ({List<LiveTag> values, bool repaired}) _normalizeTags(Iterable<LiveTag> source) {
+    final original = List<LiveTag>.from(source);
+    final sorted = List<LiveTag>.from(original)..sort((a, b) => a.order.compareTo(b.order));
+    final usedIds = <String>{};
+    var repaired = false;
+    final normalized = <LiveTag>[];
+    for (var index = 0; index < sorted.length; index++) {
+      final tag = sorted[index];
+      if (!identical(tag, original[index])) repaired = true;
+      var id = tag.id.trim();
+      if (id.isEmpty || usedIds.contains(id)) {
+        id = _allocateTagId(usedIds);
+        repaired = true;
+      }
+      usedIds.add(id);
+      if (id != tag.id || tag.order != index) {
+        repaired = true;
+        normalized.add(LiveTag(id: id, name: tag.name, description: tag.description, order: index));
+      } else {
+        normalized.add(tag);
+      }
+    }
+    return (values: normalized, repaired: repaired);
+  }
+
+  List<String> _normalizeTagIds(Iterable<String> source) {
+    final validTagIds = tags.map((tag) => tag.id).toSet();
+    final seen = <String>{};
+    final normalized = <String>[];
+    for (final rawId in source) {
+      final id = rawId.trim();
+      if (id.isNotEmpty && validTagIds.contains(id) && seen.add(id)) normalized.add(id);
+    }
+    return normalized;
+  }
+
+  Map<String, List<String>> _normalizeRoomTagsMap(Map<String, List<String>> source) {
+    final normalized = <String, List<String>>{};
+    for (final entry in source.entries) {
+      final key = entry.key.trim();
+      if (key.isEmpty) continue;
+      final merged = _normalizeTagIds([...?normalized[key], ...entry.value]);
+      if (merged.isNotEmpty) normalized[key] = merged;
+    }
+    return normalized;
+  }
+
+  Map<String, List<String>> _copyRoomTagsMap(Map<String, List<String>> source) {
+    return {for (final entry in source.entries) entry.key: List<String>.from(entry.value)};
+  }
+
+  bool _roomTagsMapsEqual(Map<String, List<String>> left, Map<String, List<String>> right) {
+    if (left.length != right.length) return false;
+    for (final entry in left.entries) {
+      final other = right[entry.key];
+      if (other == null || !_stringListsEqual(entry.value, other)) return false;
+    }
+    return true;
+  }
+
+  bool _stringListsEqual(List<String> left, List<String> right) {
+    if (left.length != right.length) return false;
+    for (var index = 0; index < left.length; index++) {
+      if (left[index] != right[index]) return false;
+    }
+    return true;
+  }
+
   Map<String, dynamic> exportToJson() {
-    return {'tags': tags.map((e) => e.toJson()).toList(), 'roomTagsMap': roomTagsMap};
+    return {'tags': tags.map((e) => e.toJson()).toList(), 'roomTagsMap': _copyRoomTagsMap(roomTagsMap)};
   }
 
   static Map<String, dynamic> parseConfig(Map<String, dynamic> json) {
@@ -206,12 +298,20 @@ class TagManagementController extends GetxController {
     if (json == null) return;
     final parsed = parseConfig(json);
     if (parsed.containsKey('tags')) {
-      tags.assignAll(parsed['tags']);
+      final normalized = _normalizeTags(List<LiveTag>.from(parsed['tags'] as List));
+      tags.assignAll(normalized.values);
       saveTags();
     }
     if (parsed.containsKey('roomTagsMap')) {
-      roomTagsMap.assignAll(parsed['roomTagsMap']);
+      final normalized = _normalizeRoomTagsMap(Map<String, List<String>>.from(parsed['roomTagsMap'] as Map));
+      roomTagsMap.assignAll(normalized);
       saveRoomTagsMapping();
+    } else if (parsed.containsKey('tags')) {
+      final normalized = _normalizeRoomTagsMap(_copyRoomTagsMap(roomTagsMap));
+      if (!_roomTagsMapsEqual(roomTagsMap, normalized)) {
+        roomTagsMap.assignAll(normalized);
+        saveRoomTagsMapping();
+      }
     }
   }
 }

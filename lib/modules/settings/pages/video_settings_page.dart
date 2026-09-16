@@ -6,15 +6,44 @@ import 'package:pure_live/player/utils/window_helper.dart';
 import 'package:pure_live/player/core/live_audio_service.dart';
 import 'package:pure_live/modules/settings/pages/font_family_manager_page.dart';
 import 'package:pure_live/common/services/settings/app_settings_controller.dart';
+import 'package:pure_live/common/services/settings/player_settings_controller.dart';
 import 'package:pure_live/modules/settings/pages/pip_danmaku_settings_page.dart';
 import 'package:pure_live/modules/settings/pages/portrait_live_settings_page.dart';
 import 'package:pure_live/modules/settings/pages/audience_metric_settings_page.dart';
 
+typedef SleepTimerConfigurator = Future<void> Function({required bool enabled, required int minutes});
+typedef SleepPermissionRequester = Future<bool> Function();
+typedef BackgroundPlaybackConfigurator = Future<void> Function({required bool enabled});
+typedef PipAlwaysOnTopSetter = Future<void> Function(bool enabled);
+
 class VideoSettingsPage extends StatefulWidget {
-  const VideoSettingsPage({super.key, this.platformOverride});
+  const VideoSettingsPage({
+    super.key,
+    this.platformOverride,
+    this.sleepTimerConfiguratorOverride,
+    this.sleepPermissionRequesterOverride,
+    this.backgroundPlaybackConfiguratorOverride,
+    this.backgroundPlaybackTaskObserver,
+    this.pipAlwaysOnTopSetterOverride,
+  });
 
   @visibleForTesting
   final TargetPlatform? platformOverride;
+
+  @visibleForTesting
+  final SleepTimerConfigurator? sleepTimerConfiguratorOverride;
+
+  @visibleForTesting
+  final SleepPermissionRequester? sleepPermissionRequesterOverride;
+
+  @visibleForTesting
+  final BackgroundPlaybackConfigurator? backgroundPlaybackConfiguratorOverride;
+
+  @visibleForTesting
+  final ValueChanged<Future<void>>? backgroundPlaybackTaskObserver;
+
+  @visibleForTesting
+  final PipAlwaysOnTopSetter? pipAlwaysOnTopSetterOverride;
 
   @override
   State<VideoSettingsPage> createState() => _VideoSettingsPageState();
@@ -24,6 +53,13 @@ enum _ResolutionPreferenceTarget { wifi, cellular }
 
 class _VideoSettingsPageState extends State<VideoSettingsPage> {
   bool _resolutionDialogBusy = false;
+  bool _asmrDialogBusy = false;
+  bool _asmrModeBusy = false;
+  String? _asmrModeErrorText;
+  bool _backgroundPlayBusy = false;
+  String? _backgroundPlayErrorText;
+  bool _pipAlwaysOnTopBusy = false;
+  String? _pipAlwaysOnTopErrorText;
 
   TargetPlatform get _platform => widget.platformOverride ?? defaultTargetPlatform;
   bool get _isAndroid => _platform == TargetPlatform.android;
@@ -141,39 +177,28 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
               context.buildSwitchTile(
                 icon: Remix.music_2_line,
                 title: i18n("enable_background_play"),
-                subtitle: i18n("enable_background_play_subtitle"),
+                subtitle: _backgroundPlayErrorText ?? i18n("enable_background_play_subtitle"),
+                subtitleColor: _backgroundPlayErrorText == null ? null : theme.colorScheme.error,
+                isLong: true,
                 value: SettingsService.to.app.enableBackgroundPlay,
-                onChanged: (val) async {
-                  SettingsService.to.app.enableBackgroundPlay.v = val;
-                  if (val && _isAndroid) {
-                    bool hasPermission = await LiveAudioService.requestPlatformPermissions();
-                    SettingsService.to.app.enableBackgroundPlay.v = hasPermission;
-                    await LiveAudioService.syncKeepAlive();
-                  } else if (!val) {
-                    if (!LiveAudioService.isSleepSessionActive) {
-                      await LiveAudioService.releaseKeepAlive();
-                    }
-                  }
+                enabled: !_backgroundPlayBusy,
+                autoCommit: false,
+                onChanged: (enabled) {
+                  final task = _changeBackgroundPlayback(enabled);
+                  widget.backgroundPlaybackTaskObserver?.call(task);
                 },
               ),
             if (_isAndroid)
               context.buildSwitchTile(
                 icon: Remix.moon_clear_line,
                 title: i18n('asmr_sleep_mode'),
-                subtitle: i18n('asmr_sleep_mode_desc'),
+                subtitle: _asmrModeErrorText ?? i18n('asmr_sleep_mode_desc'),
+                subtitleColor: _asmrModeErrorText == null ? null : theme.colorScheme.error,
+                isLong: true,
                 value: SettingsService.to.app.enableAsmrSleepMode,
-                onChanged: (val) async {
-                  if (val) {
-                    final hasPermission = await LiveAudioService.requestPlatformPermissions();
-                    SettingsService.to.app.enableAsmrSleepMode.v = hasPermission;
-                  } else {
-                    SettingsService.to.app.enableAsmrSleepMode.v = false;
-                    await LiveAudioService.configureSleepTimer(
-                      enabled: false,
-                      minutes: SettingsService.to.app.asmrSleepMinutes.v,
-                    );
-                  }
-                },
+                enabled: !_asmrModeBusy,
+                autoCommit: false,
+                onChanged: _changeAsmrSleepMode,
               ),
             if (_isAndroid)
               Obx(
@@ -185,7 +210,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                     _formatAsmrDuration(SettingsService.to.app.asmrSleepMinutes.v),
                     style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
                   ),
-                  onTap: () => _showAsmrSleepTimerDialog(context),
+                  onTap: _asmrDialogBusy ? null : _showAsmrSleepTimerDialog,
                 ),
               ),
             context.buildSwitchTile(
@@ -197,10 +222,14 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
             if (_isWindows)
               context.buildSwitchTile(
                 title: i18n('windows_pip_always_on_top'),
-                subtitle: i18n('windows_pip_always_on_top_subtitle'),
+                subtitle: _pipAlwaysOnTopErrorText ?? i18n('windows_pip_always_on_top_subtitle'),
+                subtitleColor: _pipAlwaysOnTopErrorText == null ? null : theme.colorScheme.error,
+                isLong: true,
                 value: SettingsService.to.player.windowsPipAlwaysOnTop,
                 icon: Remix.pushpin_line,
-                onChanged: WindowHelper.instance.setPiPAlwaysOnTop,
+                enabled: !_pipAlwaysOnTopBusy,
+                autoCommit: false,
+                onChanged: _changePipAlwaysOnTop,
               ),
             if (_isWindows)
               context.buildSwitchTile(
@@ -269,8 +298,137 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     );
   }
 
-  void _showAsmrSleepTimerDialog(BuildContext context) {
-    showDialog<void>(context: context, builder: (_) => const _AsmrSleepTimerDialog());
+  Future<void> _showAsmrSleepTimerDialog() async {
+    if (_asmrDialogBusy || !mounted) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    final app = SettingsService.to.app;
+    final configureSleepTimer = widget.sleepTimerConfiguratorOverride ?? LiveAudioService.configureSleepTimer;
+    setState(() => _asmrDialogBusy = true);
+    try {
+      await showDialog<void>(
+        context: context,
+        useRootNavigator: true,
+        builder: (_) => _AsmrSleepTimerDialog(
+          initialMinutes: app.asmrSleepMinutes.v,
+          onSave: (minutes) async {
+            if (!mounted || app.isClosed || ModalRoute.of(context)?.isActive != true) return false;
+            await configureSleepTimer(enabled: LiveAudioService.isSleepSessionActive, minutes: minutes);
+            if (!mounted || app.isClosed || ModalRoute.of(context)?.isActive != true) return false;
+            app.asmrSleepMinutes.v = minutes;
+            return true;
+          },
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _asmrDialogBusy = false);
+    }
+  }
+
+  Future<void> _changeAsmrSleepMode(bool enabled) async {
+    if (_asmrModeBusy || !mounted) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    final app = SettingsService.to.app;
+    if (app.isClosed || app.enableAsmrSleepMode.v == enabled) return;
+    final requestPermission = widget.sleepPermissionRequesterOverride ?? LiveAudioService.requestPlatformPermissions;
+    final configureSleepTimer = widget.sleepTimerConfiguratorOverride ?? LiveAudioService.configureSleepTimer;
+    setState(() {
+      _asmrModeBusy = true;
+      _asmrModeErrorText = null;
+    });
+    try {
+      if (enabled) {
+        final granted = await requestPermission();
+        if (!_canCommitAsmrMode(app) || !granted) return;
+      } else {
+        await configureSleepTimer(enabled: false, minutes: app.asmrSleepMinutes.v);
+        if (!_canCommitAsmrMode(app)) return;
+      }
+      app.enableAsmrSleepMode.v = enabled;
+    } catch (_) {
+      if (_canCommitAsmrMode(app)) {
+        setState(() => _asmrModeErrorText = i18n('asmr_sleep_mode_apply_failed'));
+      }
+    } finally {
+      if (mounted) setState(() => _asmrModeBusy = false);
+    }
+  }
+
+  Future<void> _changeBackgroundPlayback(bool enabled) async {
+    if (_backgroundPlayBusy || !mounted) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    final app = SettingsService.to.app;
+    if (app.isClosed || app.enableBackgroundPlay.v == enabled) return;
+    final previous = app.enableBackgroundPlay.v;
+    final requestPermission = widget.sleepPermissionRequesterOverride ?? LiveAudioService.requestPlatformPermissions;
+    final configure = widget.backgroundPlaybackConfiguratorOverride ?? LiveAudioService.configureBackgroundPlayback;
+    setState(() {
+      _backgroundPlayBusy = true;
+      _backgroundPlayErrorText = null;
+    });
+    try {
+      if (enabled) {
+        final granted = await requestPermission();
+        if (!_canCommitBackgroundPlayback(app) || !granted) return;
+      }
+      await configure(enabled: enabled);
+      if (!_canCommitBackgroundPlayback(app)) {
+        try {
+          await configure(enabled: previous);
+        } catch (_) {}
+        return;
+      }
+      app.enableBackgroundPlay.v = enabled;
+    } catch (_) {
+      if (_canCommitBackgroundPlayback(app)) {
+        setState(() => _backgroundPlayErrorText = i18n('background_play_apply_failed'));
+      }
+    } finally {
+      if (mounted) setState(() => _backgroundPlayBusy = false);
+    }
+  }
+
+  bool _canCommitBackgroundPlayback(AppSettingsController app) {
+    return mounted && !app.isClosed && ModalRoute.of(context)?.isActive == true;
+  }
+
+  bool _canCommitAsmrMode(AppSettingsController app) {
+    return mounted && !app.isClosed && ModalRoute.of(context)?.isActive == true;
+  }
+
+  Future<void> _changePipAlwaysOnTop(bool enabled) async {
+    if (_pipAlwaysOnTopBusy || !mounted) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    final player = SettingsService.to.player;
+    if (player.isClosed || player.windowsPipAlwaysOnTop.v == enabled) return;
+    final previous = player.windowsPipAlwaysOnTop.v;
+    final setAlwaysOnTop = widget.pipAlwaysOnTopSetterOverride ?? WindowHelper.instance.setPiPAlwaysOnTop;
+    setState(() {
+      _pipAlwaysOnTopBusy = true;
+      _pipAlwaysOnTopErrorText = null;
+    });
+    try {
+      await setAlwaysOnTop(enabled);
+      if (!_canCommitPipAlwaysOnTop(player)) {
+        try {
+          await setAlwaysOnTop(previous);
+        } catch (_) {}
+        return;
+      }
+      player.windowsPipAlwaysOnTop.v = enabled;
+    } catch (_) {
+      try {
+        await setAlwaysOnTop(previous);
+      } catch (_) {}
+      if (_canCommitPipAlwaysOnTop(player)) {
+        setState(() => _pipAlwaysOnTopErrorText = i18n('windows_pip_always_on_top_apply_failed'));
+      }
+    } finally {
+      if (mounted) setState(() => _pipAlwaysOnTopBusy = false);
+    }
+  }
+
+  bool _canCommitPipAlwaysOnTop(PlayerSettingsController player) {
+    return mounted && !player.isClosed && ModalRoute.of(context)?.isActive == true;
   }
 
   Future<void> _showPreferredResolutionSelectorDialog(_ResolutionPreferenceTarget target) async {
@@ -417,7 +575,10 @@ class _WindowsPipResetTileState extends State<_WindowsPipResetTile> {
 }
 
 class _AsmrSleepTimerDialog extends StatefulWidget {
-  const _AsmrSleepTimerDialog();
+  const _AsmrSleepTimerDialog({required this.initialMinutes, required this.onSave});
+
+  final int initialMinutes;
+  final Future<bool> Function(int minutes) onSave;
 
   @override
   State<_AsmrSleepTimerDialog> createState() => _AsmrSleepTimerDialogState();
@@ -427,11 +588,13 @@ class _AsmrSleepTimerDialogState extends State<_AsmrSleepTimerDialog> {
   static const _options = [15, 30, 45, 60, 90, 120, 240, 480, 720, 1440];
 
   late final TextEditingController _customController;
+  bool _saving = false;
+  String? _errorText;
 
   @override
   void initState() {
     super.initState();
-    _customController = TextEditingController(text: SettingsService.to.app.asmrSleepMinutes.v.toString());
+    _customController = TextEditingController(text: widget.initialMinutes.toString());
   }
 
   @override
@@ -441,60 +604,111 @@ class _AsmrSleepTimerDialogState extends State<_AsmrSleepTimerDialog> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final minutes = int.tryParse(_customController.text.trim());
     if (minutes == null || minutes < 1 || minutes > AppSettingsController.maxSleepMinutes) {
-      ToastUtil.show(i18n('custom_sleep_minutes_range'));
+      setState(() => _errorText = i18n('custom_sleep_minutes_range'));
       return;
     }
 
-    SettingsService.to.app.asmrSleepMinutes.v = minutes;
-    await LiveAudioService.configureSleepTimer(enabled: LiveAudioService.isSleepSessionActive, minutes: minutes);
-    if (mounted) Navigator.of(context).pop();
+    setState(() {
+      _saving = true;
+      _errorText = null;
+    });
+    try {
+      final saved = await widget.onSave(minutes);
+      if (!mounted) return;
+      if (!saved) {
+        setState(() {
+          _saving = false;
+          _errorText = i18n('asmr_sleep_timer_save_failed');
+        });
+        return;
+      }
+      setState(() => _saving = false);
+      Navigator.of(context, rootNavigator: true).pop();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _errorText = i18n('asmr_sleep_timer_save_failed');
+      });
+    }
+  }
+
+  void _setMinutes(int minutes) {
+    if (_saving) return;
+    setState(() {
+      _customController.text = minutes.toString();
+      _errorText = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      scrollable: true,
-      title: Text(i18n('asmr_sleep_timer')),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(i18n('asmr_sleep_timer_explain'), style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _options
-                  .map(
-                    (minutes) => ActionChip(
-                      label: Text(_formatAsmrDuration(minutes)),
-                      onPressed: () => _customController.text = minutes.toString(),
-                    ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _customController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: i18n('custom_sleep_minutes'),
-                helperText: i18n('custom_sleep_minutes_range'),
-                suffixText: i18n('minutes'),
-                border: const OutlineInputBorder(),
+    return PopScope(
+      canPop: !_saving,
+      child: AlertDialog(
+        key: const ValueKey('asmr-sleep-timer-dialog'),
+        scrollable: true,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        title: Text(i18n('asmr_sleep_timer'), style: AppTextStyles.t16Bold),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(i18n('asmr_sleep_timer_explain'), style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _options
+                    .map(
+                      (minutes) => ActionChip(
+                        label: Text(_formatAsmrDuration(minutes)),
+                        onPressed: _saving ? null : () => _setMinutes(minutes),
+                      ),
+                    )
+                    .toList(),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: _customController,
+                enabled: !_saving,
+                keyboardType: TextInputType.number,
+                onChanged: (_) {
+                  if (_errorText != null) setState(() => _errorText = null);
+                },
+                decoration: InputDecoration(
+                  labelText: i18n('custom_sleep_minutes'),
+                  helperText: _errorText == null ? i18n('custom_sleep_minutes_range') : null,
+                  errorText: _errorText,
+                  suffixText: i18n('minutes'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
         ),
+        actionsOverflowDirection: VerticalDirection.down,
+        actionsOverflowButtonSpacing: 8,
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+            onPressed: _saving ? null : () => Navigator.of(context, rootNavigator: true).pop(),
+            child: Text(i18n('cancel'), style: AppTextStyles.t14Muted),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(i18n('save')),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(i18n('cancel'))),
-        FilledButton(onPressed: _save, child: Text(i18n('save'))),
-      ],
     );
   }
 }

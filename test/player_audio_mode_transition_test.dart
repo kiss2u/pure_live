@@ -13,6 +13,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:pure_live/common/models/live_room.dart';
 import 'package:pure_live/model/live_play_quality.dart';
 import 'package:pure_live/player/core/player_manager.dart';
+import 'package:pure_live/player/utils/fullscreen.dart';
 import 'package:pure_live/player/core/portrait_stream_support.dart';
 import 'package:pure_live/player/models/player_state.dart';
 import 'package:pure_live/player/models/player_engine.dart';
@@ -238,6 +239,157 @@ void main() {
     unawaited(floating.events.close());
     await tester.pump();
     expect(inPip, isFalse);
+  });
+
+  test('Windows PiP serializes enter and exit and preserves state across native failures', () async {
+    final firstEnter = Completer<void>();
+    final firstExit = Completer<void>();
+    var enterCalls = 0;
+    var exitCalls = 0;
+    final manager = _createManager(
+      _FakePlayer(),
+      windowsPipEnter: (_) {
+        enterCalls++;
+        return enterCalls == 1 ? firstEnter.future : Future<void>.value();
+      },
+      windowsPipExit: () {
+        exitCalls++;
+        return exitCalls == 1 ? firstExit.future : Future<void>.value();
+      },
+    );
+    await manager.initialize();
+
+    final entering = manager.enablePip();
+    final duplicateEnter = manager.enablePip();
+
+    expect(enterCalls, 1);
+    expect(manager.isPipPreparing.value, isTrue);
+    expect(manager.isInPip.value, isFalse);
+
+    firstEnter.completeError(StateError('enter fixture failure'));
+    await expectLater(entering, throwsStateError);
+    await duplicateEnter;
+
+    expect(manager.isPipPreparing.value, isFalse);
+    expect(manager.isInPip.value, isFalse);
+
+    await manager.enablePip();
+    expect(enterCalls, 2);
+    expect(manager.isInPip.value, isTrue);
+
+    final exiting = manager.exitPip();
+    final duplicateExit = manager.exitPip();
+
+    expect(exitCalls, 1);
+    expect(manager.isPipPreparing.value, isTrue);
+    expect(manager.isInPip.value, isTrue);
+
+    firstExit.completeError(StateError('exit fixture failure'));
+    await expectLater(exiting, throwsStateError);
+    await duplicateExit;
+
+    expect(manager.isPipPreparing.value, isFalse);
+    expect(manager.isInPip.value, isTrue);
+    expect(GlobalPlayerState.to.isPipMode.value, isTrue);
+
+    await manager.exitPip();
+    expect(exitCalls, 2);
+    expect(manager.isInPip.value, isFalse);
+    await manager.dispose();
+  });
+
+  test('a Windows PiP entry completing after room close restores the normal window', () async {
+    final nativeEntry = Completer<void>();
+    var exitCalls = 0;
+    final manager = _createManager(
+      _FakePlayer(),
+      windowsPipEnter: (_) => nativeEntry.future,
+      windowsPipExit: () async {
+        exitCalls++;
+      },
+    );
+    await manager.initialize();
+
+    final entering = manager.enablePip();
+    expect(manager.isPipPreparing.value, isTrue);
+    final closing = manager.close();
+    expect(manager.isPipPreparing.value, isFalse);
+
+    nativeEntry.complete();
+    await entering;
+    await closing;
+
+    expect(exitCalls, 1);
+    expect(manager.isInPip.value, isFalse);
+    await manager.dispose();
+  });
+
+  test('closing an active Windows PiP session restores the main window once', () async {
+    var enterCalls = 0;
+    var exitCalls = 0;
+    final manager = _createManager(
+      _FakePlayer(),
+      windowsPipEnter: (_) async {
+        enterCalls++;
+      },
+      windowsPipExit: () async {
+        exitCalls++;
+      },
+    );
+    await manager.initialize();
+    await manager.enablePip();
+    expect(manager.isInPip.value, isTrue);
+
+    await manager.close();
+
+    expect(exitCalls, 1);
+    expect(manager.isInPip.value, isFalse);
+    await manager.enablePip();
+    expect(enterCalls, 1);
+    await manager.dispose();
+  });
+
+  test('disposing an active Windows PiP session restores the main window once', () async {
+    var exitCalls = 0;
+    final manager = _createManager(
+      _FakePlayer(),
+      windowsPipEnter: (_) async {},
+      windowsPipExit: () async {
+        exitCalls++;
+      },
+    );
+    await manager.initialize();
+    await manager.enablePip();
+    expect(manager.isInPip.value, isTrue);
+
+    await manager.dispose();
+
+    expect(exitCalls, 1);
+    expect(manager.isInPip.value, isFalse);
+  });
+
+  test('Windows PiP exit adopts a committed host exit when presentation rollback also fails', () async {
+    final manager = _createManager(
+      _FakePlayer(),
+      windowsPipEnter: (_) async {},
+      windowsPipExit: () async {
+        throw WindowsPipExitFailure(
+          cause: StateError('presentation fixture failure'),
+          causeStackTrace: StackTrace.current,
+          hostIsInPip: false,
+        );
+      },
+    );
+    await manager.initialize();
+    await manager.enablePip();
+
+    await expectLater(manager.exitPip(), throwsA(isA<WindowsPipExitFailure>()));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(manager.isPipPreparing.value, isFalse);
+    expect(manager.isInPip.value, isFalse);
+    expect(GlobalPlayerState.to.isPipMode.value, isFalse);
+    await manager.dispose();
   });
 
   test('unrelated player-state updates retain the active route video controller', () {
@@ -1134,9 +1286,13 @@ PlayerManager _createManager(
   Future<void> Function(LiveRoom room)? audioSessionStart,
   UnifiedPlayerCreator? playerCreator,
   Floating? androidFloating,
+  WindowsPipEnter? windowsPipEnter,
+  WindowsPipExit? windowsPipExit,
 }) {
   return PlayerManager(
     androidFloating: androidFloating,
+    windowsPipEnter: windowsPipEnter,
+    windowsPipExit: windowsPipExit,
     playerCreator: playerCreator ?? (_) => player,
     fallbackManager: EngineFallbackManager(
       defaultEngine: PlayerEngine.mediaKit,

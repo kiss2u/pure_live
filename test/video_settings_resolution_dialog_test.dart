@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -285,6 +286,115 @@ void main() {
     expect(tester.takeException(), isNull);
   }, skip: !Platform.isWindows);
 
+  testWidgets('Windows PiP always-on-top serializes native updates and commits only after success', (tester) async {
+    final player = SettingsService.to.player;
+    player.windowsPipAlwaysOnTop.value = false;
+    final enableAttempt = Completer<void>();
+    final disableAttempt = Completer<void>();
+    final requests = <bool>[];
+
+    await _pumpVideoSettings(
+      tester,
+      english: english,
+      size: const Size(420, 800),
+      platform: TargetPlatform.windows,
+      pipAlwaysOnTopSetterOverride: (enabled) {
+        requests.add(enabled);
+        return switch (requests.length) {
+          1 => enableAttempt.future,
+          2 || 3 => Future<void>.value(),
+          4 => disableAttempt.future,
+          _ => throw StateError('unexpected native update'),
+        };
+      },
+    );
+
+    final pinEntry = find.ancestor(
+      of: find.text('Keep Windows mini player on top'),
+      matching: find.byType(SwitchListTile),
+    );
+    await _scrollPageUntilHitTestable(tester, pinEntry);
+    final enable = tester.widget<SwitchListTile>(pinEntry).onChanged!;
+    enable(true);
+    enable(true);
+    await tester.pump();
+
+    expect(requests, [true]);
+    expect(player.windowsPipAlwaysOnTop.value, isFalse);
+    expect(tester.widget<SwitchListTile>(pinEntry).onChanged, isNull);
+
+    enableAttempt.completeError(StateError('fixture failure'));
+    await tester.pumpAndSettle();
+
+    expect(requests, [true, false]);
+    expect(player.windowsPipAlwaysOnTop.value, isFalse);
+    expect(find.text('Could not update mini player stacking. Try again.'), findsOneWidget);
+    expect(tester.widget<SwitchListTile>(pinEntry).onChanged, isNotNull);
+
+    tester.widget<SwitchListTile>(pinEntry).onChanged!(true);
+    await tester.pumpAndSettle();
+
+    expect(requests, [true, false, true]);
+    expect(player.windowsPipAlwaysOnTop.value, isTrue);
+
+    final disable = tester.widget<SwitchListTile>(pinEntry).onChanged!;
+    disable(false);
+    disable(false);
+    await tester.pump();
+
+    expect(requests, [true, false, true, false]);
+    expect(player.windowsPipAlwaysOnTop.value, isTrue);
+    expect(tester.widget<SwitchListTile>(pinEntry).onChanged, isNull);
+
+    disableAttempt.complete();
+    await tester.pumpAndSettle();
+
+    expect(requests, [true, false, true, false]);
+    expect(player.windowsPipAlwaysOnTop.value, isFalse);
+    expect(tester.widget<SwitchListTile>(pinEntry).onChanged, isNotNull);
+    expect(tester.takeException(), isNull);
+  }, skip: !Platform.isWindows);
+
+  testWidgets('ASMR timer owns one responsive route and releases it after cancellation', (tester) async {
+    await _pumpVideoSettings(
+      tester,
+      english: english,
+      size: const Size(320, 480),
+      textScale: 3,
+      platform: TargetPlatform.android,
+    );
+
+    final timerEntry = find.ancestor(of: find.text('Auto sleep playback duration'), matching: find.byType(ListTile));
+    await _scrollPageUntilHitTestable(tester, timerEntry);
+    final openTimer = tester.widget<ListTile>(timerEntry).onTap!;
+
+    openTimer();
+    openTimer();
+    await _pumpRouteTransition(tester);
+
+    final dialog = find.byKey(const ValueKey('asmr-sleep-timer-dialog'));
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(dialog, findsOneWidget);
+    final cancel = find.widgetWithText(TextButton, 'Cancel').hitTestable();
+    expect(cancel, findsOneWidget);
+    expect(tester.getSize(cancel).width, greaterThanOrEqualTo(48));
+    expect(tester.getSize(cancel).height, greaterThanOrEqualTo(48));
+    expect(tester.getRect(dialog).top, greaterThanOrEqualTo(0));
+    expect(tester.getRect(dialog).bottom, lessThanOrEqualTo(480));
+
+    await tester.tap(cancel);
+    await _pumpRouteTransition(tester);
+    expect(dialog, findsNothing);
+
+    openTimer();
+    await _pumpRouteTransition(tester);
+    expect(dialog, findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel').hitTestable());
+    await _pumpRouteTransition(tester);
+    expect(dialog, findsNothing);
+    expect(tester.takeException(), isNull);
+  }, skip: !Platform.isWindows);
+
   testWidgets('ASMR timer keeps every preset and action reachable in narrow very-large text', (tester) async {
     await _pumpVideoSettings(
       tester,
@@ -341,6 +451,234 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   }, skip: !Platform.isWindows);
+
+  testWidgets('ASMR timer validates inline and serializes a failing save before retry', (tester) async {
+    final app = SettingsService.to.app;
+    app.asmrSleepMinutes.value = 60;
+    final firstAttempt = Completer<void>();
+    var calls = 0;
+
+    await _pumpVideoSettings(
+      tester,
+      english: english,
+      size: const Size(420, 800),
+      platform: TargetPlatform.android,
+      sleepTimerConfiguratorOverride: ({required enabled, required minutes}) {
+        calls++;
+        return calls == 1 ? firstAttempt.future : Future<void>.value();
+      },
+    );
+
+    final timerEntry = find.ancestor(of: find.text('Auto sleep playback duration'), matching: find.byType(ListTile));
+    await _scrollPageUntilHitTestable(tester, timerEntry);
+    await tester.tap(timerEntry.hitTestable());
+    await _pumpRouteTransition(tester);
+
+    final dialog = find.byKey(const ValueKey('asmr-sleep-timer-dialog'));
+    final customInput = find.descendant(of: dialog, matching: find.byType(TextField));
+    await tester.enterText(customInput, '0');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(calls, 0);
+    expect(app.asmrSleepMinutes.value, 60);
+    expect(find.text('Enter 1 minute to 365 days'), findsOneWidget);
+
+    await tester.enterText(customInput, '7');
+    final save = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'));
+    save.onPressed!();
+    save.onPressed!();
+    await tester.pump();
+
+    expect(calls, 1);
+    expect(app.asmrSleepMinutes.value, 60);
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNull);
+    expect(tester.widget<TextField>(customInput).enabled, isFalse);
+    expect(tester.widget<TextButton>(find.byType(TextButton)).onPressed, isNull);
+
+    firstAttempt.completeError(StateError('fixture failure'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(dialog, findsOneWidget);
+    expect(app.asmrSleepMinutes.value, 60);
+    expect(find.text('Could not update the sleep timer. Try again.'), findsOneWidget);
+    expect(tester.widget<TextField>(customInput).enabled, isTrue);
+
+    await tester.enterText(customInput, '8');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await _pumpRouteTransition(tester);
+
+    expect(calls, 2);
+    expect(app.asmrSleepMinutes.value, 8);
+    expect(dialog, findsNothing);
+    expect(tester.takeException(), isNull);
+  }, skip: !Platform.isWindows);
+
+  testWidgets('ASMR mode serializes disable work and commits only after the timer service succeeds', (tester) async {
+    final app = SettingsService.to.app;
+    app.enableAsmrSleepMode.value = true;
+    app.asmrSleepMinutes.value = 60;
+    final disableAttempt = Completer<void>();
+    var calls = 0;
+
+    await _pumpVideoSettings(
+      tester,
+      english: english,
+      size: const Size(420, 800),
+      platform: TargetPlatform.android,
+      sleepTimerConfiguratorOverride: ({required enabled, required minutes}) {
+        calls++;
+        expect(enabled, isFalse);
+        expect(minutes, 60);
+        return calls == 1 ? disableAttempt.future : Future<void>.value();
+      },
+    );
+
+    final modeEntry = find.ancestor(
+      of: find.text('Auto-start sleep audio for new rooms'),
+      matching: find.byType(SwitchListTile),
+    );
+    await _scrollPageUntilHitTestable(tester, modeEntry);
+    final disable = tester.widget<SwitchListTile>(modeEntry).onChanged!;
+    disable(false);
+    disable(false);
+    await tester.pump();
+
+    expect(calls, 1);
+    expect(app.enableAsmrSleepMode.value, isTrue);
+    expect(tester.widget<SwitchListTile>(modeEntry).onChanged, isNull);
+
+    disableAttempt.completeError(StateError('fixture failure'));
+    await tester.pumpAndSettle();
+
+    expect(calls, 1);
+    expect(app.enableAsmrSleepMode.value, isTrue);
+    expect(find.text('Could not update auto sleep. Try again.'), findsOneWidget);
+    expect(tester.widget<SwitchListTile>(modeEntry).onChanged, isNotNull);
+
+    tester.widget<SwitchListTile>(modeEntry).onChanged!(false);
+    await tester.pumpAndSettle();
+
+    expect(calls, 2);
+    expect(app.enableAsmrSleepMode.value, isFalse);
+    expect(tester.widget<SwitchListTile>(modeEntry).onChanged, isNotNull);
+    expect(tester.takeException(), isNull);
+  }, skip: !Platform.isWindows);
+
+  testWidgets('ASMR mode commits enable only after permission is granted', (tester) async {
+    final app = SettingsService.to.app;
+    app.enableAsmrSleepMode.value = false;
+    var permissionCalls = 0;
+
+    await _pumpVideoSettings(
+      tester,
+      english: english,
+      size: const Size(420, 800),
+      platform: TargetPlatform.android,
+      sleepPermissionRequesterOverride: () async {
+        permissionCalls++;
+        return permissionCalls > 1;
+      },
+    );
+
+    final modeEntry = find.ancestor(
+      of: find.text('Auto-start sleep audio for new rooms'),
+      matching: find.byType(SwitchListTile),
+    );
+    await _scrollPageUntilHitTestable(tester, modeEntry);
+
+    tester.widget<SwitchListTile>(modeEntry).onChanged!(true);
+    await tester.pumpAndSettle();
+    expect(permissionCalls, 1);
+    expect(app.enableAsmrSleepMode.value, isFalse);
+
+    tester.widget<SwitchListTile>(modeEntry).onChanged!(true);
+    await tester.pumpAndSettle();
+    expect(permissionCalls, 2);
+    expect(app.enableAsmrSleepMode.value, isTrue);
+    expect(tester.takeException(), isNull);
+  }, skip: !Platform.isWindows);
+
+  testWidgets('background playback owns one permission transaction and delays preference commit', (tester) async {
+    final app = SettingsService.to.app;
+    app.enableBackgroundPlay.value = false;
+    final permissionAttempt = Completer<bool>();
+    final disableAttempt = Completer<void>();
+    var permissionCalls = 0;
+    var configureCalls = 0;
+    final tasks = <Future<void>>[];
+
+    await _pumpVideoSettings(
+      tester,
+      english: english,
+      size: const Size(420, 800),
+      platform: TargetPlatform.android,
+      sleepPermissionRequesterOverride: () {
+        permissionCalls++;
+        return permissionAttempt.future;
+      },
+      backgroundPlaybackConfiguratorOverride: ({required enabled}) {
+        configureCalls++;
+        expect(enabled, configureCalls <= 2);
+        if (configureCalls == 1) throw StateError('fixture failure');
+        if (configureCalls == 2) return Future<void>.value();
+        return disableAttempt.future;
+      },
+      backgroundPlaybackTaskObserver: tasks.add,
+    );
+
+    final backgroundEntry = find.ancestor(of: find.text('Play Background'), matching: find.byType(SwitchListTile));
+    await _scrollPageUntilHitTestable(tester, backgroundEntry);
+    final enable = tester.widget<SwitchListTile>(backgroundEntry).onChanged!;
+    enable(true);
+    enable(true);
+    await tester.pump();
+
+    expect(tasks, hasLength(2));
+    expect(permissionCalls, 1);
+    expect(configureCalls, 0);
+    expect(app.enableBackgroundPlay.value, isFalse);
+    expect(tester.widget<SwitchListTile>(backgroundEntry).onChanged, isNull);
+
+    permissionAttempt.complete(true);
+    await tasks.first;
+    await tester.pumpAndSettle();
+
+    expect(permissionCalls, 1);
+    expect(configureCalls, 1);
+    expect(app.enableBackgroundPlay.value, isFalse);
+    expect(find.text('Could not update background playback. Try again.'), findsOneWidget);
+    expect(tester.widget<SwitchListTile>(backgroundEntry).onChanged, isNotNull);
+
+    tester.widget<SwitchListTile>(backgroundEntry).onChanged!(true);
+    expect(tasks, hasLength(3));
+    await tasks.last;
+    await tester.pumpAndSettle();
+
+    expect(permissionCalls, 2);
+    expect(configureCalls, 2);
+    expect(app.enableBackgroundPlay.value, isTrue);
+
+    final disable = tester.widget<SwitchListTile>(backgroundEntry).onChanged!;
+    disable(false);
+    disable(false);
+    await tester.pump();
+
+    expect(tasks, hasLength(5));
+    expect(configureCalls, 3);
+    expect(app.enableBackgroundPlay.value, isTrue);
+    expect(tester.widget<SwitchListTile>(backgroundEntry).onChanged, isNull);
+
+    disableAttempt.complete();
+    await tasks[3];
+    await tester.pumpAndSettle();
+
+    expect(configureCalls, 3);
+    expect(app.enableBackgroundPlay.value, isFalse);
+    expect(tester.widget<SwitchListTile>(backgroundEntry).onChanged, isNotNull);
+    expect(tester.takeException(), isNull);
+  }, skip: !Platform.isWindows);
 }
 
 Future<void> _pumpVideoSettings(
@@ -349,6 +687,11 @@ Future<void> _pumpVideoSettings(
   required Size size,
   double textScale = 1,
   required TargetPlatform platform,
+  SleepTimerConfigurator? sleepTimerConfiguratorOverride,
+  SleepPermissionRequester? sleepPermissionRequesterOverride,
+  BackgroundPlaybackConfigurator? backgroundPlaybackConfiguratorOverride,
+  ValueChanged<Future<void>>? backgroundPlaybackTaskObserver,
+  PipAlwaysOnTopSetter? pipAlwaysOnTopSetterOverride,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -376,7 +719,14 @@ Future<void> _pumpVideoSettings(
             data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
             child: child!,
           ),
-          home: VideoSettingsPage(platformOverride: platform),
+          home: VideoSettingsPage(
+            platformOverride: platform,
+            sleepTimerConfiguratorOverride: sleepTimerConfiguratorOverride,
+            sleepPermissionRequesterOverride: sleepPermissionRequesterOverride,
+            backgroundPlaybackConfiguratorOverride: backgroundPlaybackConfiguratorOverride,
+            backgroundPlaybackTaskObserver: backgroundPlaybackTaskObserver,
+            pipAlwaysOnTopSetterOverride: pipAlwaysOnTopSetterOverride,
+          ),
         ),
       ),
     ),

@@ -58,6 +58,28 @@ void main() {
     expect(tags.getTagsForRoom(room), isEmpty);
   });
 
+  test('legacy room mappings merge with existing platform assignments without data loss', () async {
+    final tags = Get.find<TagManagementController>();
+    tags.tags.assignAll([LiveTag(id: 'legacy', name: 'Legacy'), LiveTag(id: 'existing', name: 'Existing', order: 1)]);
+    tags.roomTagsMap.assignAll({
+      'fixture-room': ['legacy', 'legacy', 'missing'],
+      'bilibili:fixture-room': ['existing'],
+    });
+
+    tags.migrateLegacyRoomTagKeys([_room(), _room(platform: 'huya')]);
+
+    expect(tags.roomTagsMap, {
+      'bilibili:fixture-room': ['existing', 'legacy'],
+      'huya:fixture-room': ['legacy'],
+    });
+    await Future<void>.delayed(Duration.zero);
+    await HivePrefUtil.flush();
+    expect(HivePrefUtil.getAnyPref('room_to_tags_mapping_v1'), {
+      'bilibili:fixture-room': ['existing', 'legacy'],
+      'huya:fixture-room': ['legacy'],
+    });
+  });
+
   testWidgets('room tag assignment opens from the authoritative mapping instead of stale room fields', (tester) async {
     final room = _room()..tagIds = ['stale'];
     SettingsService.to.fav.addRoom(room);
@@ -100,6 +122,74 @@ void main() {
     expect(Get.find<TagManagementController>().tags.map((tag) => tag.name), contains('Travel'));
     expect(_selectedIndicatorFor('Travel'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('room add form keeps validation inline and exposes named clear actions', (tester) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      final room = _room();
+      SettingsService.to.fav.addRoom(room);
+      Get.find<TagManagementController>().tags.assignAll([LiveTag(id: 'existing', name: 'Existing')]);
+      await _pumpCard(tester, english, room);
+      await _openTagAssignment(tester);
+
+      await tester.tap(find.byIcon(Remix.add_circle_line));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('room-tag-submit-new')).hitTestable());
+      await tester.pumpAndSettle();
+      expect(find.text('Tag name cannot be empty'), findsOneWidget);
+
+      final nameField = find.byKey(const ValueKey('room-tag-name'));
+      await tester.enterText(nameField, 'EXISTING');
+      await tester.tap(find.byKey(const ValueKey('room-tag-submit-new')).hitTestable());
+      await tester.pumpAndSettle();
+      expect(find.text('A tag with this name already exists'), findsOneWidget);
+
+      await tester.enterText(nameField, 'Travel');
+      await tester.enterText(find.byKey(const ValueKey('room-tag-description')), 'Outdoor streams');
+      await tester.pump();
+      expect(find.text('A tag with this name already exists'), findsNothing);
+
+      final clearName = find.byKey(const ValueKey('room-tag-clear-name'));
+      final clearDescription = find.byKey(const ValueKey('room-tag-clear-description'));
+      expect(clearName.hitTestable(), findsOneWidget);
+      expect(clearDescription.hitTestable(), findsOneWidget);
+      expect(tester.getSemantics(clearName).label, 'Clear tag name');
+      expect(tester.getSemantics(clearDescription).label, 'Clear tag description');
+      expect(tester.getSize(clearName).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(clearDescription).height, greaterThanOrEqualTo(48));
+
+      await tester.tap(clearDescription);
+      await tester.pump();
+      expect(tester.widget<TextField>(find.byKey(const ValueKey('room-tag-description'))).controller!.text, isEmpty);
+      expect(tester.takeException(), isNull);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('room add form remains scrollable at narrow 3x English text', (tester) async {
+    final room = _room();
+    SettingsService.to.fav.addRoom(room);
+    final textScale = await _pumpCard(tester, english, room);
+    await _openTagAssignment(tester);
+    textScale.value = 3;
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Remix.add_circle_line));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('room-tag-cancel-new')).hitTestable(), findsOneWidget);
+    expect(find.byKey(const ValueKey('room-tag-submit-new')).hitTestable(), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('room-tag-submit-new')).hitTestable());
+    await tester.pumpAndSettle();
+    expect(find.text('Tag name cannot be empty'), findsOneWidget);
+    final description = find.byKey(const ValueKey('room-tag-description'));
+    await Scrollable.ensureVisible(tester.element(description), alignment: 0.5, duration: Duration.zero);
+    await tester.pump();
+    expect(description.hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -215,9 +305,9 @@ void main() {
   });
 }
 
-LiveRoom _room() => LiveRoom(
+LiveRoom _room({String platform = 'bilibili'}) => LiveRoom(
   roomId: 'fixture-room',
-  platform: 'bilibili',
+  platform: platform,
   nick: 'Fixture anchor',
   title: 'Fixture live room',
   liveStatus: LiveStatus.live,

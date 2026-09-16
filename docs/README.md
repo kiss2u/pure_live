@@ -4,6 +4,41 @@
 
 ## 开发与发布
 
+- [Issue #852 ColorOS 14 系统手势返回审计](ISSUE_852_COLOROS_SYSTEM_BACK_AUDIT_2026_09_16.md)：Flutter 共享元素预测返回的输入持有风险、普通路由 FadeForwards 回退策略、commit/cancel 与目的页再交互回归，以及 ColorOS 14 原生复验边界。
+- [Issue #865 WebDAV 仅恢复关注列表审计](ISSUE_865_WEBDAV_FAVORITES_ONLY_RESTORE_AUDIT_2026_09_15.md)：全量/仅关注双入口、版本化与旧版备份兼容、目标范围预校验、共享恢复事务、窄屏大字号确认及 104 项回归。
+- [Issue #866 抖音多画面黑屏源码审计](ISSUE_866_DOUYIN_MULTIVIEW_AUDIT_2026_09_15.md)：3.1.3 纯音频 `ao` 被选作小格最低档的历史红灯、当前过滤修复、严格详情/视频源/播放请求头跨层回归，以及普通播放偶发失败、平板横屏和 Windows 卡顿的独立待验边界。
+- [标签编辑冲突与所有权审计](TAG_EDITOR_CONFLICT_AND_OWNERSHIP_AUDIT_2026_09_15.md)：同 ID 对象替换、原对象并发更新与控制器换代保护，以及具备 live-region 的可核对冲突状态。
+- [标签删除确认与目标身份审计](TAG_DELETE_CONFIRMATION_AND_IDENTITY_AUDIT_2026_09_15.md)：完整双语确认句、48 px 破坏性动作，以及确认期间控制器和标签对象身份替换保护。
+- [标签置顶状态与拖拽所有权审计](TAG_TOP_STATE_AND_DRAG_OWNERSHIP_AUDIT_2026_09_15.md)：首项已置顶状态与禁用语义、非首项具名置顶、连续顺序更新，以及整卡长按拖拽的唯一所有者。
+- [标签编辑器校验、可访问性与布局审计](TAG_EDITOR_VALIDATION_ACCESSIBILITY_AND_LAYOUT_AUDIT_2026_09_15.md)：字段内空名称/重名反馈、具名 48 px 清除动作、窄屏大字号滚动，以及房间弹窗异步路由和控制器生命周期。
+- [标签房间映射迁移与导入完整性审计](TAG_ROOM_MAPPING_MIGRATION_AND_IMPORT_INTEGRITY_AUDIT_2026_09_15.md)：旧房间号向多平台无损合并、映射键/ID 规范化、导入前身份修复、孤儿映射清理和深拷贝持久化快照。
+- [标签身份与改名完整性审计](TAG_MANAGEMENT_IDENTITY_AND_RENAME_INTEGRITY_AUDIT_2026_09_15.md)：快速新建唯一 ID、旧碰撞身份启动修复并写回、连续顺序，以及排除当前项的大小写改名重复检查。
+- [标签管理卡片动作可访问性审计](TAG_MANAGEMENT_CARD_ACTION_ACCESSIBILITY_AUDIT_2026_09_15.md)：置顶/编辑/删除均携带目标标签名、独立按钮与点击语义、完整 Tooltip、48 px 命中和等待期禁用。
+
+- [标签管理详情可访问性与路由事务审计](TAG_MANAGEMENT_DETAIL_ACCESSIBILITY_AND_ROUTE_AUDIT_2026_09_15.md)：具名 48 px 详情动作、独立按钮/点击语义、应用字号感知卡片高度，以及新增/详情/编辑/删除共享的页面级 single-flight 路由。
+
+- [桌面托盘菜单事件与事务所有权审计](DESKTOP_TRAY_CONTEXT_MENU_EVENT_AND_TRANSACTION_AUDIT_2026_09_15.md)：右键按下唯一入口、释放事件去重、刷新/弹出 single-flight、异常收口与失败后重试。
+
+- [Windows 标题栏项目链接可访问性与打开事务审计](WINDOWS_TITLE_BAR_PROJECT_LINK_TRANSACTION_AUDIT_2026_09_15.md)：具名链接与 Tooltip、键盘焦点/激活、单次外部打开、等待门禁、false/异常反馈，以及窄宽大字号收束。
+
+- [Windows 标题栏控制按钮可访问性与动作事务审计](WINDOWS_TITLE_BAR_CONTROL_ACCESSIBILITY_AUDIT_2026_09_15.md)：三个系统动作的双语语义与 Tooltip、键盘焦点/激活、可见焦点、异步 single-flight、失败反馈与可重试合同。
+
+- [Windows 窗口几何捕获所有权审计](WINDOWS_WINDOW_GEOMETRY_CAPTURE_OWNERSHIP_AUDIT_2026_09_14.md)：普通窗口/PiP 统一宿主队列、最小化/最大化/真全屏隔离、异步二次核对与事件异常收口。
+
+- [Windows 小窗呈现事务与回滚审计](WINDOWS_PIP_PRESENTATION_TRANSACTION_AUDIT_2026_09_14.md)：全屏/宽屏快照所有权、进出 single-flight、跨宿主呈现回滚、可重试退出与真实宿主状态同步。
+
+- [Windows 小窗宿主事务与回滚审计](WINDOWS_PIP_HOST_TRANSACTION_AND_ROLLBACK_AUDIT_2026_09_14.md)：原生窗口串行队列、成功后模式提交、失败逐项回滚、几何隔离与 400×300 最小尺寸恢复。
+
+- [Windows 小窗进出事务与生命周期审计](WINDOWS_PIP_TRANSITION_OWNERSHIP_AUDIT_2026_09_14.md)：进出 single-flight、原生失败反馈、迟到进入清理、关闭/销毁恢复与关闭后重入栅栏。
+
+- [Windows 小窗置顶开关事务审计](WINDOWS_PIP_ALWAYS_ON_TOP_TRANSACTION_AUDIT_2026_09_14.md)：原生窗口层级成功后的延迟提交、等待态、旧层级恢复、失败反馈与单次重试事务。
+
+- [视频设置后台播放开关事务审计](VIDEO_SETTINGS_BACKGROUND_PLAYBACK_TRANSACTION_AUDIT_2026_09_14.md)：权限/后台服务完成后的延迟提交、开关等待态、失败保留与重试，以及助眠/纯音频保活兼容。
+
+- [视频设置 ASMR 模式开关事务审计](VIDEO_SETTINGS_ASMR_MODE_TRANSACTION_AUDIT_2026_09_14.md)：权限/定时服务完成后的延迟提交、开关等待态、失败保留与重试，以及共享开关的显式事务合同。
+
+- [视频设置 ASMR 定时路由与保存事务审计](VIDEO_SETTINGS_ASMR_TIMER_TRANSACTION_AUDIT_2026_09_14.md)：页面单次路由、行内范围/失败反馈、保存等待态与服务成功后的延迟持久化。
+
 - [视频设置清晰度路由与选择事务审计](VIDEO_SETTINGS_RESOLUTION_ROUTE_TRANSACTION_AUDIT_2026_09_14.md)：双入口共享单次路由、类型化延迟提交、明确取消动作与页面/控制器生命周期栅栏。
 
 - [Windows 小窗几何捕获与重置事务审计](WINDOWS_PIP_GEOMETRY_CAPTURE_AND_RESET_AUDIT_2026_09_14.md)：显示器身份规范持久化、响应式单次重置、取消保留与五字段原子清空。

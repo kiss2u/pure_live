@@ -1,5 +1,109 @@
 [
   {
+    "version": "3.1.19",
+    "title": "v3.1.19",
+    "date": "2026-10-10",
+    "github": "https://github.com/liuchuancong/pure_live/releases/tag/v3.1.19",
+    "author": {
+      "name": "github-actions[bot]",
+      "avatar": "https://avatars.githubusercontent.com/in/15368?v=4",
+      "profile": "https://github.com/apps/github-actions"
+    },
+    "changelog": "# 纯粹直播 v3.1.19\n|版本|下载地址|\n|---|---|\n|TV版|[pure_live_TV](https://github.com/liuchuancong/pure_live_TV/releases/latest)|\n|Windows/macOS/Android/iOS版|[pure_live](https://github.com/liuchuancong/pure_live/releases/latest)|\n### 🖥️ Windows 版\n- **Portable ZIP**：解压即用，无需安装\n- **EXE 安装包**：适合所有用户\n- **MSIX 包**：现代应用格式，支持干净卸载\n- 适配：Windows 10/11 x64\n### 🍎 macOS 版\n- macOS 桌面版\n- Universal：Apple Silicon + Intel\n- ZIP / DMG\n### 📱 Android 版\n- Android 8.0+（API 26，FFmpegKit 录制依赖要求）\n- ARM64-v8a\n- ARMv7\n- x86_64\n- 统一 SHA256 校验文件：[**ANDROID_SHA256SUM.txt**](https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/ANDROID_SHA256SUM.txt)\n### 🐧 Linux 版\n- Linux x64\n- **DEB 安装包**：适合 Debian/Ubuntu 及其衍生发行版\n- **Portable ZIP / tar.gz**：解压即用，无需安装\n### 🍎 iOS 版\n- unsigned iOS device application\n- TrollStore / ad-hoc IPA\n- ARM64\n### 🔧 Build Metadata\n[**BUILD_METADATA.json**](https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/BUILD_METADATA.json)\n### 📝 本次更新\nversion: 3.1.19\n版本更新：\n- 修复部分bug",
+    "files": [
+      {
+        "name": "ANDROID_SHA256SUM.txt",
+        "size": "0.0mb",
+        "downloads": 57,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/ANDROID_SHA256SUM.txt"
+      },
+      {
+        "name": "BUILD_METADATA.json",
+        "size": "0.0mb",
+        "downloads": 19,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/BUILD_METADATA.json"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-android-arm64-v8a",
+        "size": "132.39mb",
+        "downloads": 2555,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-android-arm64-v8a-release.apk"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-android-armeabi-v7a",
+        "size": "112.97mb",
+        "downloads": 176,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-android-armeabi-v7a-release.apk"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-android-x86_64",
+        "size": "140.36mb",
+        "downloads": 54,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-android-x86_64-release.apk"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-ios-arm64-trollstore.ipa",
+        "size": "63.76mb",
+        "downloads": 120,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-ios-arm64-trollstore.ipa"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-ios-arm64-unsigned-app.zip",
+        "size": "63.21mb",
+        "downloads": 33,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-ios-arm64-unsigned-app.zip"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-linux-x64.deb",
+        "size": "53.39mb",
+        "downloads": 21,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-linux-x64.deb"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-linux-x64.tar.gz",
+        "size": "61.89mb",
+        "downloads": 18,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-linux-x64.tar.gz"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-linux-x64.zip",
+        "size": "62.29mb",
+        "downloads": 20,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-linux-x64.zip"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-macos-universal.dmg",
+        "size": "118.59mb",
+        "downloads": 46,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-macos-universal.dmg"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-macos-universal.zip",
+        "size": "105.3mb",
+        "downloads": 17,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-macos-universal.zip"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-windows-x64-portable.zip",
+        "size": "81.5mb",
+        "downloads": 535,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-windows-x64-portable.zip"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-windows-x64-setup.exe",
+        "size": "62.86mb",
+        "downloads": 1099,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-windows-x64-setup.exe"
+      },
+      {
+        "name": "PureLive-3.1.19-4108-windows-x64.msix",
+        "size": "87.41mb",
+        "downloads": 122,
+        "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.19/PureLive-3.1.19-4108-windows-x64.msix"
+      }
+    ]
+  },
+  {
     "version": "3.1.18",
     "title": "v3.1.18",
     "date": "2026-10-08",
@@ -14,7 +118,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 128,
+        "downloads": 136,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/ANDROID_SHA256SUM.txt"
       },
       {
@@ -26,13 +130,13 @@
       {
         "name": "PureLive-3.1.18-4107-android-arm64-v8a",
         "size": "132.45mb",
-        "downloads": 3412,
+        "downloads": 3473,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/PureLive-3.1.18-4107-android-arm64-v8a-release.apk"
       },
       {
         "name": "PureLive-3.1.18-4107-android-armeabi-v7a",
         "size": "112.97mb",
-        "downloads": 234,
+        "downloads": 236,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/PureLive-3.1.18-4107-android-armeabi-v7a-release.apk"
       },
       {
@@ -44,7 +148,7 @@
       {
         "name": "PureLive-3.1.18-4107-ios-arm64-trollstore.ipa",
         "size": "63.76mb",
-        "downloads": 204,
+        "downloads": 237,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/PureLive-3.1.18-4107-ios-arm64-trollstore.ipa"
       },
       {
@@ -62,7 +166,7 @@
       {
         "name": "PureLive-3.1.18-4107-linux-x64.tar.gz",
         "size": "61.89mb",
-        "downloads": 51,
+        "downloads": 55,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/PureLive-3.1.18-4107-linux-x64.tar.gz"
       },
       {
@@ -74,7 +178,7 @@
       {
         "name": "PureLive-3.1.18-4107-macos-universal.dmg",
         "size": "118.15mb",
-        "downloads": 59,
+        "downloads": 65,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/PureLive-3.1.18-4107-macos-universal.dmg"
       },
       {
@@ -86,19 +190,19 @@
       {
         "name": "PureLive-3.1.18-4107-windows-x64-portable.zip",
         "size": "81.49mb",
-        "downloads": 557,
+        "downloads": 572,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/PureLive-3.1.18-4107-windows-x64-portable.zip"
       },
       {
         "name": "PureLive-3.1.18-4107-windows-x64-setup.exe",
         "size": "62.86mb",
-        "downloads": 1467,
+        "downloads": 1495,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/PureLive-3.1.18-4107-windows-x64-setup.exe"
       },
       {
         "name": "PureLive-3.1.18-4107-windows-x64.msix",
         "size": "87.41mb",
-        "downloads": 146,
+        "downloads": 149,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.18/PureLive-3.1.18-4107-windows-x64.msix"
       }
     ]
@@ -118,7 +222,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 626,
+        "downloads": 629,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.17/ANDROID_SHA256SUM.txt"
       },
       {
@@ -130,25 +234,25 @@
       {
         "name": "PureLive-3.1.17-4106-android-arm64-v8a",
         "size": "137.85mb",
-        "downloads": 11036,
+        "downloads": 11045,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.17/PureLive-3.1.17-4106-android-arm64-v8a-release.apk"
       },
       {
         "name": "PureLive-3.1.17-4106-android-armeabi-v7a",
         "size": "116.7mb",
-        "downloads": 816,
+        "downloads": 818,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.17/PureLive-3.1.17-4106-android-armeabi-v7a-release.apk"
       },
       {
         "name": "PureLive-3.1.17-4106-android-x86_64",
         "size": "146.63mb",
-        "downloads": 451,
+        "downloads": 454,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.17/PureLive-3.1.17-4106-android-x86_64-release.apk"
       },
       {
         "name": "PureLive-3.1.17-4106-ios-arm64-trollstore.ipa",
         "size": "62.17mb",
-        "downloads": 572,
+        "downloads": 573,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.17/PureLive-3.1.17-4106-ios-arm64-trollstore.ipa"
       },
       {
@@ -166,7 +270,7 @@
       {
         "name": "PureLive-3.1.17-4106-macos-universal.dmg",
         "size": "113.23mb",
-        "downloads": 242,
+        "downloads": 243,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.17/PureLive-3.1.17-4106-macos-universal.dmg"
       },
       {
@@ -184,7 +288,7 @@
       {
         "name": "PureLive-3.1.17-4106-windows-x64-setup.exe",
         "size": "58.03mb",
-        "downloads": 3766,
+        "downloads": 3768,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.17/PureLive-3.1.17-4106-windows-x64-setup.exe"
       },
       {
@@ -210,7 +314,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 100,
+        "downloads": 101,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.6/ANDROID_SHA256SUM.txt"
       },
       {
@@ -222,7 +326,7 @@
       {
         "name": "PureLive-3.1.6-4105-android-arm64-v8a",
         "size": "137.81mb",
-        "downloads": 1666,
+        "downloads": 1678,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.6/PureLive-3.1.6-4105-android-arm64-v8a-release.apk"
       },
       {
@@ -270,7 +374,7 @@
       {
         "name": "PureLive-3.1.6-4105-windows-x64-portable.zip",
         "size": "75.8mb",
-        "downloads": 178,
+        "downloads": 179,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.6/PureLive-3.1.6-4105-windows-x64-portable.zip"
       },
       {
@@ -302,7 +406,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 216,
+        "downloads": 217,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.5/ANDROID_SHA256SUM.txt"
       },
       {
@@ -314,7 +418,7 @@
       {
         "name": "PureLive-3.1.5-4104-android-arm64-v8a",
         "size": "126.05mb",
-        "downloads": 4876,
+        "downloads": 4883,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.5/PureLive-3.1.5-4104-android-arm64-v8a-release.apk"
       },
       {
@@ -394,7 +498,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 496,
+        "downloads": 497,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.4/ANDROID_SHA256SUM.txt"
       },
       {
@@ -406,7 +510,7 @@
       {
         "name": "PureLive-3.1.4-4103-android-arm64-v8a",
         "size": "122.49mb",
-        "downloads": 6616,
+        "downloads": 6624,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.4/PureLive-3.1.4-4103-android-arm64-v8a-release.apk"
       },
       {
@@ -486,7 +590,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 243,
+        "downloads": 244,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.3/ANDROID_SHA256SUM.txt"
       },
       {
@@ -498,7 +602,7 @@
       {
         "name": "PureLive-3.1.3-4101-android-arm64-v8a",
         "size": "122.49mb",
-        "downloads": 3404,
+        "downloads": 3407,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.3/PureLive-3.1.3-4101-android-arm64-v8a-release.apk"
       },
       {
@@ -578,7 +682,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 566,
+        "downloads": 568,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.2/ANDROID_SHA256SUM.txt"
       },
       {
@@ -590,7 +694,7 @@
       {
         "name": "PureLive-3.1.2-4100-android-arm64-v8a",
         "size": "120.42mb",
-        "downloads": 7683,
+        "downloads": 7689,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.2/PureLive-3.1.2-4100-android-arm64-v8a-release.apk"
       },
       {
@@ -650,7 +754,7 @@
       {
         "name": "PureLive-3.1.2-4100-windows-x64.msix",
         "size": "79.98mb",
-        "downloads": 391,
+        "downloads": 392,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.2/PureLive-3.1.2-4100-windows-x64.msix"
       }
     ]
@@ -670,7 +774,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 226,
+        "downloads": 227,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.1/ANDROID_SHA256SUM.txt"
       },
       {
@@ -682,7 +786,7 @@
       {
         "name": "PureLive-3.1.1-4099-android-arm64-v8a",
         "size": "120.42mb",
-        "downloads": 2271,
+        "downloads": 2272,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.1/PureLive-3.1.1-4099-android-arm64-v8a-release.apk"
       },
       {
@@ -712,13 +816,13 @@
       {
         "name": "PureLive-3.1.1-4099-linux-x64.tar.gz",
         "size": "36.61mb",
-        "downloads": 23,
+        "downloads": 24,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.1/PureLive-3.1.1-4099-linux-x64.tar.gz"
       },
       {
         "name": "PureLive-3.1.1-4099-macos-universal.dmg",
         "size": "109.22mb",
-        "downloads": 39,
+        "downloads": 40,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.1/PureLive-3.1.1-4099-macos-universal.dmg"
       },
       {
@@ -762,7 +866,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 171,
+        "downloads": 172,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.0/ANDROID_SHA256SUM.txt"
       },
       {
@@ -774,7 +878,7 @@
       {
         "name": "PureLive-3.0.10-4098-android-arm64-v8a",
         "size": "120.5mb",
-        "downloads": 1099,
+        "downloads": 1100,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.0/PureLive-3.0.10-4098-android-arm64-v8a-release.apk"
       },
       {
@@ -834,7 +938,7 @@
       {
         "name": "PureLive-3.0.10-4098-windows-x64.msix",
         "size": "79.93mb",
-        "downloads": 56,
+        "downloads": 57,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.1.0/PureLive-3.0.10-4098-windows-x64.msix"
       }
     ]
@@ -854,7 +958,7 @@
       {
         "name": "ANDROID_SHA256SUM.txt",
         "size": "0.0mb",
-        "downloads": 263,
+        "downloads": 264,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.0.9/ANDROID_SHA256SUM.txt"
       },
       {
@@ -866,7 +970,7 @@
       {
         "name": "PureLive-3.0.9-4097-android-arm64-v8a",
         "size": "113.23mb",
-        "downloads": 3728,
+        "downloads": 3729,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.0.9/PureLive-3.0.9-4097-android-arm64-v8a-release.apk"
       },
       {
@@ -958,7 +1062,7 @@
       {
         "name": "PureLive-3.0.8-4096-android-arm64-v8a",
         "size": "112.97mb",
-        "downloads": 3997,
+        "downloads": 3998,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.0.8/PureLive-3.0.8-4096-android-arm64-v8a-release.apk"
       },
       {
@@ -1050,7 +1154,7 @@
       {
         "name": "PureLive-3.0.7-4095-android-arm64-v8a",
         "size": "113.01mb",
-        "downloads": 2546,
+        "downloads": 2548,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.0.7/PureLive-3.0.7-4095-android-arm64-v8a-release.apk"
       },
       {
@@ -1142,7 +1246,7 @@
       {
         "name": "PureLive-3.0.5-4093-android-arm64-v8a",
         "size": "112.75mb",
-        "downloads": 1336,
+        "downloads": 1338,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.0.5/PureLive-3.0.5-4093-android-arm64-v8a-release.apk"
       },
       {
@@ -1234,7 +1338,7 @@
       {
         "name": "PureLive-3.0.4-4092-android-arm64-v8a",
         "size": "112.75mb",
-        "downloads": 1488,
+        "downloads": 1489,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v3.0.4/PureLive-3.0.4-4092-android-arm64-v8a-release.apk"
       },
       {
@@ -1326,7 +1430,7 @@
       {
         "name": "PureLive-2.9.8-4087-android-arm64-v8a",
         "size": "112.74mb",
-        "downloads": 2752,
+        "downloads": 2753,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.9.8/PureLive-2.9.8-4087-android-arm64-v8a-release.apk"
       },
       {
@@ -1418,7 +1522,7 @@
       {
         "name": "PureLive-2.9.7-4086-android-arm64-v8a",
         "size": "112.74mb",
-        "downloads": 1085,
+        "downloads": 1086,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.9.7/PureLive-2.9.7-4086-android-arm64-v8a-release.apk"
       },
       {
@@ -1510,7 +1614,7 @@
       {
         "name": "PureLive-2.9.5-4084-android-arm64-v8a",
         "size": "112.58mb",
-        "downloads": 1011,
+        "downloads": 1012,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.9.5/PureLive-2.9.5-4084-android-arm64-v8a-release.apk"
       },
       {
@@ -1602,7 +1706,7 @@
       {
         "name": "PureLive-2.9.4-4083-android-arm64-v8a",
         "size": "113.74mb",
-        "downloads": 488,
+        "downloads": 489,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.9.4/PureLive-2.9.4-4083-android-arm64-v8a.apk"
       },
       {
@@ -1694,7 +1798,7 @@
       {
         "name": "PureLive-2.7.0-4077-android-arm64-v8a",
         "size": "114.45mb",
-        "downloads": 1753,
+        "downloads": 1754,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.7.0/PureLive-2.7.0-4077-android-arm64-v8a-release.apk"
       },
       {
@@ -1792,7 +1896,7 @@
       {
         "name": "PureLive-2.6.0-4076-arm64-v8a",
         "size": "114.29mb",
-        "downloads": 1541,
+        "downloads": 1542,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.6.0/PureLive-2.6.0-4076-arm64-v8a-release.apk"
       },
       {
@@ -1902,7 +2006,7 @@
       {
         "name": "PureLive-2.3.0-68-arm64-v8a",
         "size": "114.07mb",
-        "downloads": 3040,
+        "downloads": 3041,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.3.0/PureLive-2.3.0-68-arm64-v8a-release.apk"
       },
       {
@@ -2090,7 +2194,7 @@
       {
         "name": "PureLive-2.2.0-58-arm64-v8a",
         "size": "122.37mb",
-        "downloads": 2717,
+        "downloads": 2718,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.2.0/PureLive-2.2.0-58-arm64-v8a-release.apk"
       },
       {
@@ -2158,7 +2262,7 @@
       {
         "name": "PureLive-2.1.4-52-arm64-v8a",
         "size": "122.25mb",
-        "downloads": 1600,
+        "downloads": 1601,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.1.4/PureLive-2.1.4-52-arm64-v8a-release.apk"
       },
       {
@@ -2226,7 +2330,7 @@
       {
         "name": "PureLive-2.1.1-android-arm64",
         "size": "122.24mb",
-        "downloads": 136,
+        "downloads": 138,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.1.1/PureLive-2.1.1-android-arm64.apk"
       },
       {
@@ -2300,7 +2404,7 @@
       {
         "name": "arm64-v8a",
         "size": "122.55mb",
-        "downloads": 1044,
+        "downloads": 1046,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.24/app-arm64-v8a-release.apk"
       },
       {
@@ -2356,7 +2460,7 @@
       {
         "name": "arm64-v8a",
         "size": "122.69mb",
-        "downloads": 6363,
+        "downloads": 6364,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.23/app-arm64-v8a-release.apk"
       },
       {
@@ -2418,7 +2522,7 @@
       {
         "name": "armeabi-v7a",
         "size": "109.11mb",
-        "downloads": 2165,
+        "downloads": 2166,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.22/app-armeabi-v7a-release.apk"
       },
       {
@@ -2436,7 +2540,7 @@
       {
         "name": "PureLive-2.0.22+33-windows-x64-setup.exe",
         "size": "65.76mb",
-        "downloads": 6335,
+        "downloads": 6336,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.22/PureLive-2.0.22%2B33-windows-x64-setup.exe"
       },
       {
@@ -2512,13 +2616,13 @@
       {
         "name": "arm64-v8a",
         "size": "120.69mb",
-        "downloads": 4041,
+        "downloads": 4042,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.20/app-arm64-v8a-release.apk"
       },
       {
         "name": "armeabi-v7a",
         "size": "106.36mb",
-        "downloads": 392,
+        "downloads": 393,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.20/app-armeabi-v7a-release.apk"
       },
       {
@@ -3028,7 +3132,7 @@
       {
         "name": "arm64-v8a",
         "size": "67.57mb",
-        "downloads": 248,
+        "downloads": 249,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.10/app-arm64-v8a-release.apk"
       },
       {
@@ -3090,7 +3194,7 @@
       {
         "name": "PureLive-2.0.9+20-windows-x64-setup.exe",
         "size": "36.39mb",
-        "downloads": 360,
+        "downloads": 361,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.9/PureLive-2.0.9%2B20-windows-x64-setup.exe"
       }
     ]
@@ -3330,7 +3434,7 @@
       {
         "name": "PureLive-2.0.3+14-macOS.dmg",
         "size": "55.34mb",
-        "downloads": 91,
+        "downloads": 92,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.3/PureLive-2.0.3%2B14-macOS.dmg"
       },
       {
@@ -3438,7 +3542,7 @@
       {
         "name": "armeabi-v7a",
         "size": "55.05mb",
-        "downloads": 743,
+        "downloads": 748,
         "url": "https://github.com/liuchuancong/pure_live/releases/download/v2.0.0/app-armeabi-v7a-release.apk"
       },
       {
@@ -4435,19 +4539,6 @@
       "profile": "https://github.com/liuchuancong"
     },
     "changelog": "-Fix:修复自动刷新关闭\n-Add:添加历史更新记录",
-    "files": []
-  },
-  {
-    "version": "1.4.7",
-    "title": "1.4.7",
-    "date": "2023-11-28",
-    "github": "https://github.com/liuchuancong/pure_live/releases/tag/1.4.7",
-    "author": {
-      "name": "liuchuancong",
-      "avatar": "https://avatars.githubusercontent.com/u/36957912?v=4",
-      "profile": "https://github.com/liuchuancong"
-    },
-    "changelog": "-Fix:返回现在不会退出App.\n-Fix:双击关注按钮可刷新.\n-Fix:优化录播标志",
     "files": []
   }
 ]
